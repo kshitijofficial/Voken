@@ -14,7 +14,26 @@ const TokenBalance = ({ walletAddress, idlWithAddress, getProvider, connection }
         if (!walletAddress) {
             return;
         }
-      
+        const provider = getProvider();
+        const program = new anchor.Program(idlWithAddress, provider);
+
+        let [xMintPda] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode(SEEDS.X_MINT)],
+            program.programId
+        );
+
+        const buyerTokenAccount = await getAssociatedTokenAddress(
+            xMintPda,
+            provider.wallet.publicKey
+        );
+
+        try {
+            const accountInfo = await getAccount(connection, buyerTokenAccount);
+            setBalance(Number(accountInfo.amount));
+        } catch (err) {
+            console.log("Token account not found or no balance");
+            setBalance(0);
+        }
     }
 
     useEffect(() => {

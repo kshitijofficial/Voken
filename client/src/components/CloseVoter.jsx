@@ -9,7 +9,14 @@ const CloseVoter = ({ walletAddress, idlWithAddress, getProvider }) => {
             alert("Please connect your wallet");
             return;
         }
-       
+        const provider = getProvider();
+        const program = new anchor.Program(idlWithAddress, provider);
+
+        const tx = await program.methods.closeVoter()
+            .accountsPartial({
+                signer: provider.wallet.publicKey,
+            }).rpc();
+        console.log("Transaction successful", tx);
     }
     return (
         <div className="card">

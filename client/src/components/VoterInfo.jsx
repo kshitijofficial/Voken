@@ -12,7 +12,23 @@ const VoterInfo = ({ walletAddress, idlWithAddress, getProvider }) => {
         if (!walletAddress) {
             return;
         }
-        
+        const provider = getProvider();
+        const program = new anchor.Program(idlWithAddress, provider);
+
+        let [voterPda] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode(SEEDS.VOTER), provider.wallet.publicKey.toBuffer()],
+            program.programId
+        );
+
+        try {
+            const data = await program.account.voter.fetch(voterPda);
+            setVoterData(data);
+            setIsRegistered(true);
+        } catch (err) {
+            console.log("Voter not registered");
+            setVoterData(null);
+            setIsRegistered(false);
+        }
     }
 
     useEffect(() => {

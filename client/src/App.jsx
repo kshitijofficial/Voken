@@ -15,22 +15,28 @@ import VoterInfo from './components/VoterInfo';
 import ProposalInfo from './components/ProposalInfo';
 import AllProposals from './components/AllProposals';
 import TreasuryInfo from './components/TreasuryInfo';
+import * as anchor from "@coral-xyz/anchor";
 
 import './App.css'
 
-const programID = new PublicKey("PROGRAMID");
+const programID = new PublicKey("4RjxhJeJM6Umfd6m6i1c1BB3V7UNv39ZyoW6HtPbeU6D");
 const idlWithAddress = { ...idl, address: programID.toBase58() };
 
 // Network configuration - switch between local and devnet
 // Local: "http://127.0.0.1:8899"
 // Devnet: "https://api.devnet.solana.com"
 
-const network = "http://127.0.0.1:8899";
+const network = "https://api.devnet.solana.com";
 const connection = new Connection(network, "processed");
 
 //getProvider function
 const getProvider = () => {
-  
+  const provider = new anchor.AnchorProvider(
+    connection,
+    window.solana,
+    anchor.AnchorProvider.defaultOptions()
+  );
+  return provider;
 };
 
 function App() {
@@ -41,7 +47,22 @@ function App() {
 
   // Connect Wallet
   const connectWallet = async () => {
-    
+     if(window.solana){
+      try{
+        setLoading(true);
+        await window.solana.connect();
+       const walletAddress = window.solana.publicKey.toString();
+        setWalletAddress(walletAddress);
+        setError(null);
+      }catch(error){
+        setError("Phantom Wallet Connection Failed")
+      }finally{
+        setLoading(false)
+      }
+     }else{
+       console.error("Please install phantom wallet")
+       setError("Phantom Wallet Not Found")
+     }
   };
 
   const shortenAddress = (address) => {

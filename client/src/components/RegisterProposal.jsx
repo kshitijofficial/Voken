@@ -16,7 +16,65 @@ const RegisterProposal = ({ walletAddress, idlWithAddress, getProvider }) => {
     };
 
     const registerProposal = async () => {
-       
+        if (!walletAddress) {
+            alert("Please connect your wallet");
+            return;
+        }
+        const provider = getProvider();
+        const program = new anchor.Program(idlWithAddress, provider);
+
+        let [proposalCounterPda] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode(SEEDS.PROPOSAL_COUNTER)],
+            program.programId
+        );
+
+        let [xMintPda] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode(SEEDS.X_MINT)],
+            program.programId
+        );
+
+        let [treasuryConfigPda] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode(SEEDS.TREASURY_CONFIG)],
+            program.programId
+        );
+
+        // Fetch treasury config to get the treasury token account
+        const treasuryConfig = await program.account.treasuryConfig.fetch(treasuryConfigPda);
+
+        const proposalTokenAccount = await getAssociatedTokenAddress(
+            xMintPda,
+            provider.wallet.publicKey
+        );
+
+        const deadlineTimestamp = new anchor.BN(Math.floor(new Date(deadline).getTime() / 1000));
+        const stakeRaw = tokensToRaw(stakeAmount);
+
+
+             // Fetch proposal counter to get the current count for deriving the proposal PDA
+        const proposalCounterAccount = await program.account.proposalCounter.fetch(proposalCounterPda);
+
+        // Derive the proposal account PDA using the current proposal count
+        let [proposalAccountPda] = PublicKey.findProgramAddressSync(
+            [
+                new TextEncoder().encode(SEEDS.PROPOSAL),
+                new Uint8Array([proposalCounterAccount.proposalCount])
+            ],
+            program.programId
+        );
+
+        const tx = await program.methods.registerProposal(
+            proposalDescription,
+            deadlineTimestamp,
+            new anchor.BN(stakeRaw)
+        ).accountsPartial({
+            proposalCounterAccount:proposalCounterPda,
+            signer: provider.wallet.publicKey,
+            proposalAccount:proposalAccountPda,
+            xMint: xMintPda,
+            proposalTokenAccount: proposalTokenAccount,
+            treasuryTokenAccount: treasuryConfig.treasuryTokenAccount,
+        }).rpc();
+        console.log("Transaction successful", tx);
     }
     return (
         <div className="card">

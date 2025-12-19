@@ -1,5 +1,5 @@
 {
-  "address": "GDBsWYr5VuhAADd9NwvDu7Q2Ri35qWaaenVVwYy81JdC",
+  "address": "4RjxhJeJM6Umfd6m6i1c1BB3V7UNv39ZyoW6HtPbeU6D",
   "metadata": {
     "name": "vote_app",
     "version": "0.1.0",
@@ -176,7 +176,7 @@
       ],
       "args": [
         {
-          "name": "_proposal_id",
+          "name": "proposal_id",
           "type": "u8"
         }
       ]
@@ -1061,47 +1061,62 @@
     {
       "code": 6000,
       "name": "InvalidDeadline",
-      "msg": "Invalid deadline passed"
+      "msg": "Deadline must be a future timestamp"
     },
     {
       "code": 6001,
       "name": "ProposalCounterAlreadyInitialized",
-      "msg": "Proposal counter is already initalized"
+      "msg": "Proposal counter has already been initialized"
     },
     {
       "code": 6002,
       "name": "ProposalCounterOverflow",
-      "msg": "Proposal Counter Overflow"
+      "msg": "Maximum proposal limit reached"
     },
     {
       "code": 6003,
       "name": "ProposalEnded",
-      "msg": "Proposal Ended"
+      "msg": "Voting period has ended for this proposal"
     },
     {
       "code": 6004,
       "name": "ProposalVotesOverflow",
-      "msg": "Proposal Ended"
+      "msg": "Vote count overflow - maximum votes exceeded"
     },
     {
       "code": 6005,
       "name": "VotingStillActive",
-      "msg": "Voting is still active - cannot declare winner yet"
+      "msg": "Cannot declare winner while voting is still active"
     },
     {
       "code": 6006,
       "name": "NoVotesCast",
-      "msg": "No votes cast for this proposal"
+      "msg": "No votes have been cast for this proposal"
     },
     {
       "code": 6007,
-      "name": "UnauthourizedAcccess",
-      "msg": "Unauthorized access"
+      "name": "UnauthorizedAccess",
+      "msg": "You are not authorized to perform this action"
     },
     {
       "code": 6008,
       "name": "TokenMintMismatch",
-      "msg": "Token Mint Mismatch"
+      "msg": "Token mint does not match the expected mint"
+    },
+    {
+      "code": 6009,
+      "name": "VoterAlreadyVoted",
+      "msg": "Voter has already voted on this proposal"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidTokenAccountOwner",
+      "msg": "Token account is not owned by the expected wallet"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidMint",
+      "msg": "Provided mint account is invalid"
     }
   ],
   "types": [

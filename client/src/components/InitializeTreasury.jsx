@@ -20,7 +20,54 @@ const InitializeTreasury = ({ walletAddress, idlWithAddress, getProvider }) => {
     };
 
     const initializeTreasury = async () => {
+       if(!walletAddress){
+         alert("Please connect wallet");
+         return;
+       }
+       const provider = getProvider();
+       const program = new anchor.Program(idlWithAddress,provider);
        
+        let [treasuryConfigPda] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode(SEEDS.TREASURY_CONFIG)],
+            program.programId
+        );
+        let [mintAuthorityPda] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode(SEEDS.MINT_AUTHORITY)],
+            program.programId
+        );
+        let [solVaultPda] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode(SEEDS.SOL_VAULT)],
+            program.programId
+        );
+        let [xMintPda] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode(SEEDS.X_MINT)],
+            program.programId
+        );
+        let [proposalCounterPda] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode(SEEDS.PROPOSAL_COUNTER)],
+            program.programId
+        );
+
+        let treasuryTokenAccount = await getAssociatedTokenAddress(xMintPda,
+            provider.wallet.publicKey
+        )
+
+        console.log(treasuryTokenAccount.toBase58())
+
+       const solLamports = solToLamports(solPrice);
+       const tokens = tokensToRaw(tokensPerPurchase);
+
+       const tx = await program.methods.initializeTreasury(
+        new anchor.BN(solLamports),new anchor.BN(tokens)).accountsPartial({
+            authority: provider.wallet.publicKey,
+            treasuryConfig: treasuryConfigPda,
+            mintAuthority: mintAuthorityPda,
+            solVault: solVaultPda,
+            xMint: xMintPda,
+            treasuryTokenAccount: treasuryTokenAccount,
+            proposalCounter: proposalCounterPda,
+       }).rpc();
+       console.log("Transcation successful",tx);
     }
     return (
         <div className="card">

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { SEEDS } from '../constants/constants';
 import { PublicKey } from '@solana/web3.js';
 import * as anchor from "@coral-xyz/anchor";
-import { getAssociatedTokenAddress } from '@solana/spl-token';
 
 const TreasuryInfo = ({ walletAddress, idlWithAddress, getProvider }) => {
     const [treasuryInfo, setTreasuryInfo] = useState(null);
@@ -16,7 +15,43 @@ const TreasuryInfo = ({ walletAddress, idlWithAddress, getProvider }) => {
         setError(null);
 
         try {
-          
+            const provider = getProvider();
+            const program = new anchor.Program(idlWithAddress, provider);
+
+            // Only derive PDAs that are NOT stored in the config
+            const [treasuryConfigPda] = PublicKey.findProgramAddressSync(
+                [new TextEncoder().encode(SEEDS.TREASURY_CONFIG)],
+                program.programId
+            );
+
+            const [solVaultPda] = PublicKey.findProgramAddressSync(
+                [new TextEncoder().encode(SEEDS.SOL_VAULT)],
+                program.programId
+            );
+
+            // Try to fetch treasury config to check if initialized
+            try {
+                const treasuryAccountData = await program.account.treasuryConfig.fetch(treasuryConfigPda);
+
+                // Use values directly from the config instead of deriving
+                setTreasuryInfo({
+                    treasuryConfig: treasuryConfigPda.toBase58(),
+                    solVault: solVaultPda.toBase58(),
+                    xMint: treasuryAccountData.xMint.toBase58(),  // Read from config
+                    treasuryTokenAccount: treasuryAccountData.treasuryTokenAccount.toBase58(), // Read from config
+                    authority: treasuryAccountData.authority.toBase58(),
+                    solPrice: treasuryAccountData.solPrice.toString(),
+                    tokensPerPurchase: treasuryAccountData.tokensPerPurchase.toString(),
+                    isInitialized: true
+                });
+            } catch (e) {
+                // Treasury not initialized yet - show only the config and vault PDAs
+                setTreasuryInfo({
+                    treasuryConfig: treasuryConfigPda.toBase58(),
+                    solVault: solVaultPda.toBase58(),
+                    isInitialized: false
+                });
+            }
         } catch (err) {
             console.error("Error fetching treasury info:", err);
             setError("Failed to fetch treasury info");

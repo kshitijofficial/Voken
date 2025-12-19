@@ -20,7 +20,64 @@ const AllProposals = ({ walletAddress, idlWithAddress, getProvider }) => {
         setProposals([]);
 
         try {
-          
+            const provider = getProvider();
+            const program = new anchor.Program(idlWithAddress, provider);
+
+            // Use current time - on devnet/mainnet this is synced with blockchain time
+            const currentTime = Math.floor(Date.now() / 1000);
+
+            // First, get the proposal counter to know how many proposals exist
+            const [proposalCounterPda] = PublicKey.findProgramAddressSync(
+                [new TextEncoder().encode(SEEDS.PROPOSAL_COUNTER)],
+                program.programId
+            );
+
+            let proposalCount = 0;
+            try {
+                const counterData = await program.account.proposalCounter.fetch(proposalCounterPda);
+                proposalCount = counterData.proposalCount;
+            } catch (err) {
+                setError('Proposal counter not initialized. Initialize treasury first.');
+                setLoading(false);
+                return;
+            }
+
+            if (proposalCount === 0) {
+                setError('No proposals registered yet.');
+                setLoading(false);
+                return;
+            }
+
+            // Fetch all proposals
+            const fetchedProposals = [];
+
+            for (let i = 0; i < proposalCount; i++) {
+                try {
+                    const [proposalPda] = PublicKey.findProgramAddressSync(
+                        [new TextEncoder().encode(SEEDS.PROPOSAL), Buffer.from([i])],
+                        program.programId
+                    );
+
+                    const proposalData = await program.account.proposal.fetch(proposalPda);
+                    const deadline = proposalData.deadline.toNumber();
+                    const isActive = deadline > currentTime;
+
+                    fetchedProposals.push({
+                        id: proposalData.proposalId,
+                        info: proposalData.proposalInfo,
+                        votes: proposalData.numberOfVotes,
+                        deadline: deadline,
+                        authority: proposalData.authority.toBase58(),
+                        isActive: isActive,
+                        pda: proposalPda.toBase58()
+                    });
+                } catch (err) {
+                    // Proposal might have been closed, skip it
+                    console.log(`Proposal ${i} not found or closed`);
+                }
+            }
+
+            setProposals(fetchedProposals);
         } catch (err) {
             console.error("Error fetching proposals:", err);
             setError('Failed to fetch proposals');

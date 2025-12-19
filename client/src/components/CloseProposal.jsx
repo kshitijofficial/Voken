@@ -12,7 +12,16 @@ const CloseProposal = ({ walletAddress, idlWithAddress, getProvider }) => {
             alert("Please connect your wallet");
             return;
         }
-        
+        const provider = getProvider();
+        const program = new anchor.Program(idlWithAddress, provider);
+
+        const tx = await program.methods.closeProposal(
+            Number(proposalId)
+        ).accountsPartial({
+            destination: provider.wallet.publicKey,
+            signer: provider.wallet.publicKey,
+        }).rpc();
+        console.log("Transaction successful", tx);
     }
     return (
         <div className="card">

@@ -12,7 +12,21 @@ const PickWinner = ({ walletAddress, idlWithAddress, getProvider }) => {
             alert("Please connect your wallet");
             return;
         }
-      
+        const provider = getProvider();
+        const program = new anchor.Program(idlWithAddress, provider);
+
+        let [proposalAccountPda] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode(SEEDS.PROPOSAL), Buffer.from([Number(proposalId)])],
+            program.programId
+        );
+
+        const tx = await program.methods.pickWinner(
+            Number(proposalId)
+        ).accountsPartial({
+            proposalAccount: proposalAccountPda,
+            signer: provider.wallet.publicKey,
+        }).rpc();
+        console.log("Transaction successful", tx);
     }
     return (
         <div className="card">

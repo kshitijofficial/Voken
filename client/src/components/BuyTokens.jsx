@@ -18,21 +18,55 @@ const BuyTokens = ({ walletAddress, idlWithAddress, getProvider, connection }) =
         setStatus('Preparing transaction...');
 
         try {
-           
+
+            const provider = getProvider();
+            const program = new anchor.Program(idlWithAddress, provider);
+
+            let [xMintPda] = PublicKey.findProgramAddressSync(
+                [new TextEncoder().encode(SEEDS.X_MINT)],
+                program.programId
+            );
+
+            const buyerTokenAccount = await getAssociatedTokenAddress(
+                        xMintPda,
+                        provider.wallet.publicKey
+            );
             // Build a single transaction with all necessary instructions
+            const transaction  = new Transaction();
+
+
+            const [treasuryConfigPda] = PublicKey.findProgramAddressSync(
+                    [new TextEncoder().encode(SEEDS.TREASURY_CONFIG)],
+                    program.programId
+                );
+
+            const treasuryAccountData = await program.account.treasuryConfig.fetch(treasuryConfigPda);
            
-
+            const accountInfo = await connection.getAccountInfo(buyerTokenAccount);
             // Check if ATA exists, if not add creation instruction
-            
-
+            if(!accountInfo){
+                 const createAtaTx = createAssociatedTokenAccountInstruction(
+                 provider.wallet.publicKey,
+                 buyerTokenAccount,
+                 provider.wallet.publicKey,
+                 xMintPda
+            );
+            transaction.add(createAtaTx);
+            }
             // Add buy tokens instruction
             setStatus('Building buy tokens instruction...');
            
+            const buyTokenTx = await program.methods.buyTokens().accountsPartial({
+                buyer: provider.wallet.publicKey,
+                buyerTokenAccount: buyerTokenAccount,
+                xMint: xMintPda,
+                treasuryTokenAccount:treasuryAccountData.treasuryTokenAccount
+            }).instruction();
 
+            transaction.add(buyTokenTx);
             // Send single transaction with all instructions
             setStatus('Please approve the transaction...');
-           
-
+            const tx = await provider.sendAndConfirm(transaction);
             console.log("Transaction successful", tx);
             setStatus('✅ Tokens purchased successfully!');
 

@@ -17,7 +17,17 @@ const WithdrawSol = ({ walletAddress, idlWithAddress, getProvider }) => {
             alert("Please connect your wallet");
             return;
         }
-       
+        const provider = getProvider();
+        const program = new anchor.Program(idlWithAddress, provider);
+
+        const amountLamports = solToLamports(amount);
+
+        const tx = await program.methods.withdrawSol(
+            new anchor.BN(amountLamports)
+        ).accountsPartial({
+            authority: provider.wallet.publicKey,
+        }).rpc();
+        console.log("Transaction successful", tx);
     }
     return (
         <div className="card">
